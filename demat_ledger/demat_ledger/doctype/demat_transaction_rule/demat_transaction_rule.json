@@ -1,0 +1,200 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:rule_name",
+ "creation": "2026-07-19 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "rule_name",
+  "company",
+  "priority",
+  "column_break_main",
+  "action",
+  "rule_description",
+  "filters_section",
+  "transaction_type",
+  "column_break_filters",
+  "min_amount",
+  "max_amount",
+  "conditions_section",
+  "conditions",
+  "mapping_section",
+  "debit_account",
+  "credit_account",
+  "column_break_mapping",
+  "party_type",
+  "party"
+ ],
+ "fields": [
+  {
+   "fieldname": "rule_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Rule Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "priority",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Priority",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Create Journal Entry",
+   "fieldname": "action",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Action",
+   "options": "Create Journal Entry\nIgnore",
+   "reqd": 1
+  },
+  {
+   "fieldname": "rule_description",
+   "fieldtype": "Small Text",
+   "label": "Rule Description"
+  },
+  {
+   "fieldname": "filters_section",
+   "fieldtype": "Section Break",
+   "label": "Filters"
+  },
+  {
+   "default": "Any",
+   "description": "Restrict this rule to statement debits, statement credits, or both.",
+   "fieldname": "transaction_type",
+   "fieldtype": "Select",
+   "label": "Transaction Type",
+   "options": "Any\nDebit\nCredit"
+  },
+  {
+   "fieldname": "column_break_filters",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "min_amount",
+   "fieldtype": "Currency",
+   "label": "Min Amount"
+  },
+  {
+   "fieldname": "max_amount",
+   "fieldtype": "Currency",
+   "label": "Max Amount"
+  },
+  {
+   "fieldname": "conditions_section",
+   "fieldtype": "Section Break",
+   "label": "Conditions"
+  },
+  {
+   "description": "The rule matches if ANY of these conditions match the transaction.",
+   "fieldname": "conditions",
+   "fieldtype": "Table",
+   "label": "Conditions",
+   "options": "Demat Rule Condition",
+   "reqd": 1
+  },
+  {
+   "fieldname": "mapping_section",
+   "fieldtype": "Section Break",
+   "label": "Ledger Mapping"
+  },
+  {
+   "depends_on": "eval:doc.action == 'Create Journal Entry' && doc.transaction_type != 'Credit'",
+   "description": "Contra ledger used when the statement line is a DEBIT (reduces balance with broker). This account is debited; the demat ledger account is credited.",
+   "fieldname": "debit_account",
+   "fieldtype": "Link",
+   "label": "Contra Account for Debit Transactions",
+   "options": "Account"
+  },
+  {
+   "depends_on": "eval:doc.action == 'Create Journal Entry' && doc.transaction_type != 'Debit'",
+   "description": "Contra ledger used when the statement line is a CREDIT (increases balance with broker). This account is credited; the demat ledger account is debited.",
+   "fieldname": "credit_account",
+   "fieldtype": "Link",
+   "label": "Contra Account for Credit Transactions",
+   "options": "Account"
+  },
+  {
+   "fieldname": "column_break_mapping",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.action == 'Create Journal Entry'",
+   "fieldname": "party_type",
+   "fieldtype": "Link",
+   "label": "Party Type",
+   "options": "DocType"
+  },
+  {
+   "depends_on": "eval:doc.action == 'Create Journal Entry' && doc.party_type",
+   "fieldname": "party",
+   "fieldtype": "Dynamic Link",
+   "label": "Party",
+   "options": "party_type"
+  }
+ ],
+ "links": [],
+ "modified": "2026-07-19 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Demat Ledger",
+ "name": "Demat Transaction Rule",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts User",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "priority",
+ "sort_order": "ASC",
+ "states": [],
+ "track_changes": 1
+}

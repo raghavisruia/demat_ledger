@@ -1,0 +1,244 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:DEMAT-TX-{#######}",
+ "creation": "2026-07-19 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "date",
+  "demat_account",
+  "company",
+  "status",
+  "column_break_main",
+  "debit",
+  "credit",
+  "balance",
+  "currency",
+  "details_section",
+  "description",
+  "column_break_details",
+  "voucher_type",
+  "voucher_no",
+  "reference_number",
+  "matching_section",
+  "matched_rule",
+  "recommended_action",
+  "is_rule_evaluated",
+  "column_break_matching",
+  "recommended_account",
+  "party_type",
+  "party",
+  "journal_entry",
+  "import_log"
+ ],
+ "fields": [
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "demat_account",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Demat Account",
+   "options": "Demat Account",
+   "reqd": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "read_only": 1
+  },
+  {
+   "default": "Unreconciled",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Unreconciled\nReconciled\nIgnored"
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Amount that reduces your balance with the broker (statement debit).",
+   "fieldname": "debit",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Debit",
+   "options": "currency"
+  },
+  {
+   "description": "Amount that increases your balance with the broker (statement credit).",
+   "fieldname": "credit",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Credit",
+   "options": "currency"
+  },
+  {
+   "fieldname": "balance",
+   "fieldtype": "Currency",
+   "label": "Balance as per Statement",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "details_section",
+   "fieldtype": "Section Break",
+   "label": "Details"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Narration"
+  },
+  {
+   "fieldname": "column_break_details",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Voucher type as per the broker's ledger (e.g. TRADE BILL, PAYOUT, Journal Voucher).",
+   "fieldname": "voucher_type",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "Broker Voucher Type"
+  },
+  {
+   "fieldname": "voucher_no",
+   "fieldtype": "Data",
+   "label": "Broker Voucher No"
+  },
+  {
+   "fieldname": "reference_number",
+   "fieldtype": "Data",
+   "label": "Reference Number"
+  },
+  {
+   "fieldname": "matching_section",
+   "fieldtype": "Section Break",
+   "label": "Matching"
+  },
+  {
+   "fieldname": "matched_rule",
+   "fieldtype": "Link",
+   "label": "Matched Rule",
+   "options": "Demat Transaction Rule"
+  },
+  {
+   "fieldname": "recommended_action",
+   "fieldtype": "Select",
+   "label": "Recommended Action",
+   "options": "\nCreate Journal Entry\nIgnore"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_rule_evaluated",
+   "fieldtype": "Check",
+   "label": "Is Rule Evaluated",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_matching",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "The contra ledger account recommended by the matched rule. Can be overridden before creating the Journal Entry.",
+   "fieldname": "recommended_account",
+   "fieldtype": "Link",
+   "label": "Recommended Contra Account",
+   "options": "Account"
+  },
+  {
+   "fieldname": "party_type",
+   "fieldtype": "Link",
+   "label": "Party Type",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "party",
+   "fieldtype": "Dynamic Link",
+   "label": "Party",
+   "options": "party_type"
+  },
+  {
+   "fieldname": "journal_entry",
+   "fieldtype": "Link",
+   "label": "Journal Entry",
+   "options": "Journal Entry",
+   "read_only": 1
+  },
+  {
+   "fieldname": "import_log",
+   "fieldtype": "Link",
+   "label": "Import Log",
+   "options": "Demat Ledger Import Log",
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-07-19 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Demat Ledger",
+ "name": "Demat Transaction",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts User",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "date",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

@@ -8,7 +8,12 @@ app_license = "mit"
 # Apps
 # ------------------
 
-# required_apps = []
+required_apps = ["erpnext"]
+
+# SPA catch-all: /demat/* resolves to the demat www page (React app with client routing)
+website_route_rules = [
+	{"from_route": "/demat/<path:app_path>", "to_route": "demat"},
+]
 
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [
