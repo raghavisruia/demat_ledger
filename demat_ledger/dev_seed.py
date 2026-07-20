@@ -128,28 +128,34 @@ def ensure_rules(accounts):
 		{
 			"rule_name": "Ignore Opening Balance",
 			"action": "Ignore",
+			"companies": [{"company": COMPANY}],
 			"conditions": [{"match_on": "Voucher Type", "check": "Contains", "value": "open balance"}],
 		},
 		{
 			"rule_name": "Trade Bills",
 			"action": "Create Journal Entry",
 			"transaction_type": "Any",
-			"debit_account": accounts["investments"],
-			"credit_account": accounts["investments"],
+			"companies": [
+				{
+					"company": COMPANY,
+					"debit_account": accounts["investments"],
+					"credit_account": accounts["investments"],
+				}
+			],
 			"conditions": [{"match_on": "Voucher Type", "check": "Contains", "value": "trade bill"}],
 		},
 		{
 			"rule_name": "Money Payouts",
 			"action": "Create Journal Entry",
 			"transaction_type": "Debit",
-			"debit_account": accounts["bank"],
+			"companies": [{"company": COMPANY, "debit_account": accounts["bank"]}],
 			"conditions": [{"match_on": "Voucher Type", "check": "Contains", "value": "payout"}],
 		},
 		{
 			"rule_name": "DP Charges",
 			"action": "Create Journal Entry",
 			"transaction_type": "Debit",
-			"debit_account": accounts["dp_charges"],
+			"companies": [{"company": COMPANY, "debit_account": accounts["dp_charges"]}],
 			"conditions": [
 				{"match_on": "Narration", "check": "Contains", "value": "dp transaction billing"}
 			],
@@ -158,14 +164,14 @@ def ensure_rules(accounts):
 			"rule_name": "Interest Charges",
 			"action": "Create Journal Entry",
 			"transaction_type": "Debit",
-			"debit_account": accounts["interest"],
+			"companies": [{"company": COMPANY, "debit_account": accounts["interest"]}],
 			"conditions": [{"match_on": "Narration", "check": "Contains", "value": "interest charges"}],
 		},
 		{
 			"rule_name": "Administrative Charges",
 			"action": "Create Journal Entry",
 			"transaction_type": "Debit",
-			"debit_account": accounts["admin_charges"],
+			"companies": [{"company": COMPANY, "debit_account": accounts["admin_charges"]}],
 			"conditions": [
 				{"match_on": "Narration", "check": "Contains", "value": "administrative charges"}
 			],
@@ -175,7 +181,7 @@ def ensure_rules(accounts):
 	for rule in rules:
 		if frappe.db.exists("Demat Transaction Rule", rule["rule_name"]):
 			continue
-		frappe.get_doc({"doctype": "Demat Transaction Rule", "company": COMPANY, **rule}).insert()
+		frappe.get_doc({"doctype": "Demat Transaction Rule", **rule}).insert()
 		print(f"Created Rule {rule['rule_name']}")
 
 

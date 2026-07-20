@@ -10,29 +10,31 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator'
 import LinkFieldCombobox from '@/components/common/LinkFieldCombobox'
 import _ from '@/lib/translate'
-import { DematRuleCondition, DematTransactionRule } from '@/types/DematLedger'
+import { DematRuleCompanyAccount, DematRuleCondition, DematTransactionRule } from '@/types/DematLedger'
 
 const PARTY_TYPES = ['', 'Customer', 'Supplier', 'Employee', 'Shareholder']
 
 const EMPTY_CONDITION: DematRuleCondition = { match_on: 'Narration', check: 'Contains', value: '' }
+const EMPTY_COMPANY_ROW: DematRuleCompanyAccount = { company: '' }
 
 const EMPTY_RULE: DematTransactionRule = {
     rule_name: '',
-    company: '',
     action: 'Create Journal Entry',
     transaction_type: 'Any',
     conditions: [{ ...EMPTY_CONDITION }],
+    companies: [{ ...EMPTY_COMPANY_ROW }],
 }
 
 type Props = {
-    company?: string
+    /** Prefills the first company row for a brand-new rule. Ignored once editing an existing one. */
+    defaultCompany?: string
     /** When set, the form edits this rule; otherwise it creates a new one. */
     ruleName?: string
     onDone: () => void
     onCancel: () => void
 }
 
-const RuleForm = ({ company, ruleName, onDone, onCancel }: Props) => {
+const RuleForm = ({ defaultCompany, ruleName, onDone, onCancel }: Props) => {
     const isEditing = Boolean(ruleName)
 
     const { data: existingRule } = useFrappeGetDoc<DematTransactionRule>(
@@ -41,13 +43,17 @@ const RuleForm = ({ company, ruleName, onDone, onCancel }: Props) => {
         ruleName ? undefined : null,
     )
 
-    const [rule, setRule] = useState<DematTransactionRule>({ ...EMPTY_RULE, company: company ?? '' })
+    const [rule, setRule] = useState<DematTransactionRule>({
+        ...EMPTY_RULE,
+        companies: defaultCompany ? [{ company: defaultCompany }] : [{ ...EMPTY_COMPANY_ROW }],
+    })
 
     useEffect(() => {
         if (existingRule) {
             setRule({
                 ...existingRule,
                 conditions: existingRule.conditions?.length ? existingRule.conditions : [{ ...EMPTY_CONDITION }],
+                companies: existingRule.companies?.length ? existingRule.companies : [{ ...EMPTY_COMPANY_ROW }],
             })
         }
     }, [existingRule])
@@ -65,24 +71,49 @@ const RuleForm = ({ company, ruleName, onDone, onCancel }: Props) => {
             conditions: prev.conditions.map((c, i) => (i === index ? { ...c, ...patch } : c)),
         }))
 
+    const setCompanyRow = (index: number, patch: Partial<DematRuleCompanyAccount>) =>
+        setRule((prev) => ({
+            ...prev,
+            companies: prev.companies.map((row, i) => (i === index ? { ...row, ...patch } : row)),
+        }))
+
+    // Changing a row's company invalidates its previously chosen ledger accounts (they belong
+    // to the old company), so clear them rather than leaving a mismatched combination.
+    const onChangeRowCompany = (index: number, company: string) =>
+        setCompanyRow(index, { company, debit_account: undefined, credit_account: undefined })
+
+    const usedCompanies = new Set(rule.companies.map((row) => row.company).filter(Boolean))
+    const hasDuplicateCompany = usedCompanies.size !== rule.companies.filter((row) => row.company).length
+
     const showDebitAccount = rule.action === 'Create Journal Entry' && rule.transaction_type !== 'Credit'
     const showCreditAccount = rule.action === 'Create Journal Entry' && rule.transaction_type !== 'Debit'
 
+    const rowIsComplete = (row: DematRuleCompanyAccount) => {
+        if (!row.company) return false
+        if (rule.action === 'Ignore') return true
+        if (rule.transaction_type === 'Debit') return Boolean(row.debit_account)
+        if (rule.transaction_type === 'Credit') return Boolean(row.credit_account)
+        return Boolean(row.debit_account || row.credit_account)
+    }
+
     const isValid =
         rule.rule_name.trim() &&
-        rule.conditions.some((c) => c.value.trim()) &&
-        (rule.action === 'Ignore' ||
-            (rule.transaction_type === 'Debit' && rule.debit_account) ||
-            (rule.transaction_type === 'Credit' && rule.credit_account) ||
-            (rule.transaction_type === 'Any' && (rule.debit_account || rule.credit_account)))
+        rule.companies.length > 0 &&
+        !hasDuplicateCompany &&
+        rule.companies.every(rowIsComplete) &&
+        rule.conditions.some((c) => c.value.trim())
 
     const onSave = () => {
         const payload = {
             ...rule,
-            company: rule.company || company,
             conditions: rule.conditions.filter((c) => c.value.trim()),
-            debit_account: showDebitAccount ? rule.debit_account : undefined,
-            credit_account: showCreditAccount ? rule.credit_account : undefined,
+            companies: rule.companies
+                .filter((row) => row.company)
+                .map((row) => ({
+                    company: row.company,
+                    debit_account: showDebitAccount ? row.debit_account : undefined,
+                    credit_account: showCreditAccount ? row.credit_account : undefined,
+                })),
             party_type: rule.party ? rule.party_type : undefined,
             party: rule.party || undefined,
         }
@@ -110,7 +141,7 @@ const RuleForm = ({ company, ruleName, onDone, onCancel }: Props) => {
                 <DialogTitle>{isEditing ? _('Edit Rule') : _('New Rule')}</DialogTitle>
                 <DialogDescription>
                     {_(
-                        'When a transaction matches this rule, the contra ledger below is recommended automatically. The demat ledger account is always the other leg of the Journal Entry.',
+                        'When a transaction matches this rule, the contra ledger for its company is recommended automatically. The demat ledger account is always the other leg of the Journal Entry.',
                     )}
                 </DialogDescription>
             </DialogHeader>
@@ -247,59 +278,114 @@ const RuleForm = ({ company, ruleName, onDone, onCancel }: Props) => {
                 </div>
             </div>
 
+            <Separator />
+
+            <div className="flex flex-col gap-2">
+                <Label>{_('Companies & Ledger Mapping')}<span className="text-ink-red-3">*</span></Label>
+                <p className="text-xs text-ink-gray-5">
+                    {_(
+                        'This rule only matches a transaction whose company is listed below. Add a row per company; each gets its own contra ledger(s), so one rule can cover the same kind of entry (e.g. TRADE BILL) across every company you operate in.',
+                    )}
+                </p>
+                {rule.transaction_type === 'Any' && rule.action === 'Create Journal Entry' && (
+                    <p className="text-xs text-ink-gray-6">
+                        {_('Tip: set both a debit and credit account per row to handle e.g. a TRADE BILL that can be either a buy (debit) or a sell (credit) with different ledgers.')}
+                    </p>
+                )}
+                {hasDuplicateCompany && (
+                    <p className="text-xs text-ink-red-3">{_('The same company is added more than once.')}</p>
+                )}
+
+                <div className="flex flex-col gap-3">
+                    {rule.companies.map((row, index) => (
+                        <div key={index} className="flex flex-col gap-2 rounded border border-outline-gray-2 p-3">
+                            <div className="flex items-center gap-2">
+                                <div className="flex-1">
+                                    <Label className="mb-1.5 block text-xs text-ink-gray-6">{_('Company')}</Label>
+                                    <LinkFieldCombobox
+                                        doctype="Company"
+                                        value={row.company}
+                                        onChange={(value) => onChangeRowCompany(index, value)}
+                                        placeholder={_('Select company')}
+                                    />
+                                </div>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    isIconButton
+                                    className="mt-5"
+                                    disabled={rule.companies.length === 1}
+                                    onClick={() =>
+                                        setRule((prev) => ({
+                                            ...prev,
+                                            companies: prev.companies.filter((_r, i) => i !== index),
+                                        }))
+                                    }
+                                >
+                                    <Trash2Icon />
+                                </Button>
+                            </div>
+
+                            {rule.action === 'Create Journal Entry' && row.company && (
+                                <div className="grid grid-cols-2 gap-3">
+                                    {showDebitAccount && (
+                                        <div className="flex flex-col gap-1.5">
+                                            <Label className="text-xs text-ink-gray-6">
+                                                {_('Contra Account (Debit)')}
+                                                {rule.transaction_type === 'Debit' && <span className="text-ink-red-3">*</span>}
+                                            </Label>
+                                            <LinkFieldCombobox
+                                                doctype="Account"
+                                                filters={[
+                                                    ['company', '=', row.company],
+                                                    ['is_group', '=', 0],
+                                                ]}
+                                                value={row.debit_account}
+                                                onChange={(value) => setCompanyRow(index, { debit_account: value })}
+                                                placeholder={_('Select account')}
+                                            />
+                                        </div>
+                                    )}
+                                    {showCreditAccount && (
+                                        <div className="flex flex-col gap-1.5">
+                                            <Label className="text-xs text-ink-gray-6">
+                                                {_('Contra Account (Credit)')}
+                                                {rule.transaction_type === 'Credit' && <span className="text-ink-red-3">*</span>}
+                                            </Label>
+                                            <LinkFieldCombobox
+                                                doctype="Account"
+                                                filters={[
+                                                    ['company', '=', row.company],
+                                                    ['is_group', '=', 0],
+                                                ]}
+                                                value={row.credit_account}
+                                                onChange={(value) => setCompanyRow(index, { credit_account: value })}
+                                                placeholder={_('Select account')}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                    <div>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                                setRule((prev) => ({ ...prev, companies: [...prev.companies, { ...EMPTY_COMPANY_ROW }] }))
+                            }
+                        >
+                            <PlusIcon />
+                            {_('Add Company')}
+                        </Button>
+                    </div>
+                </div>
+            </div>
+
             {rule.action === 'Create Journal Entry' && (
                 <>
                     <Separator />
-                    <div className="grid grid-cols-2 gap-4">
-                        {showDebitAccount && (
-                            <div className="flex flex-col gap-2">
-                                <Label>
-                                    {_('Contra Account for Debit Transactions')}
-                                    {rule.transaction_type === 'Debit' && <span className="text-ink-red-3">*</span>}
-                                </Label>
-                                <LinkFieldCombobox
-                                    doctype="Account"
-                                    filters={[
-                                        ['company', '=', rule.company || company || ''],
-                                        ['is_group', '=', 0],
-                                    ]}
-                                    value={rule.debit_account}
-                                    onChange={(value) => set('debit_account', value)}
-                                    placeholder={_('Select account')}
-                                />
-                                <p className="text-xs text-ink-gray-5">
-                                    {_('Used when the statement line is a debit: this account is debited, the demat ledger is credited.')}
-                                </p>
-                            </div>
-                        )}
-                        {showCreditAccount && (
-                            <div className="flex flex-col gap-2">
-                                <Label>
-                                    {_('Contra Account for Credit Transactions')}
-                                    {rule.transaction_type === 'Credit' && <span className="text-ink-red-3">*</span>}
-                                </Label>
-                                <LinkFieldCombobox
-                                    doctype="Account"
-                                    filters={[
-                                        ['company', '=', rule.company || company || ''],
-                                        ['is_group', '=', 0],
-                                    ]}
-                                    value={rule.credit_account}
-                                    onChange={(value) => set('credit_account', value)}
-                                    placeholder={_('Select account')}
-                                />
-                                <p className="text-xs text-ink-gray-5">
-                                    {_('Used when the statement line is a credit: this account is credited, the demat ledger is debited.')}
-                                </p>
-                            </div>
-                        )}
-                    </div>
-                    {rule.transaction_type === 'Any' && (
-                        <p className="text-xs text-ink-gray-6">
-                            {_('Tip: set both accounts to handle e.g. a TRADE BILL that can be either a buy (debit) or a sell (credit) with different ledgers. Lines whose direction has no account fall through to the next rule.')}
-                        </p>
-                    )}
-
                     <div className="grid grid-cols-2 gap-4">
                         <div className="flex flex-col gap-2">
                             <Label>{_('Party Type (optional)')}</Label>

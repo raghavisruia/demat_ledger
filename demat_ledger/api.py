@@ -291,3 +291,22 @@ def get_demat_accounts(company: str | None = None):
 		)
 
 	return accounts
+
+
+@frappe.whitelist(methods=["GET"])
+def get_rule_company_accounts():
+	"""
+	The company/ledger rows of every Demat Transaction Rule, for the rules management UI.
+
+	frappe.client.get_list can't be used for this from the frontend: resolving field-level
+	read permission on a child doctype requires a `parent` (parent doctype) argument that the
+	generic useFrappeGetDocList hook has no way to pass, so it silently returns only `name`.
+	"""
+	frappe.has_permission("Demat Transaction Rule", ptype="read", throw=True)
+
+	return frappe.get_all(
+		"Demat Rule Company Account",
+		fields=["parent", "company", "debit_account", "credit_account"],
+		filters={"parenttype": "Demat Transaction Rule"},
+		order_by="idx asc",
+	)

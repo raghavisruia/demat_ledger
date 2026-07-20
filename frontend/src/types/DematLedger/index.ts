@@ -70,10 +70,16 @@ export interface DematRuleCondition {
 	value: string
 }
 
+export interface DematRuleCompanyAccount {
+	name?: string
+	company: string
+	debit_account?: string
+	credit_account?: string
+}
+
 export interface DematTransactionRule {
 	name?: string
 	rule_name: string
-	company: string
 	priority?: number
 	action: 'Create Journal Entry' | 'Ignore'
 	rule_description?: string
@@ -81,8 +87,8 @@ export interface DematTransactionRule {
 	min_amount?: number
 	max_amount?: number
 	conditions: DematRuleCondition[]
-	debit_account?: string
-	credit_account?: string
+	/** One row per company this rule applies to, each with its own contra ledger(s). */
+	companies: DematRuleCompanyAccount[]
 	party_type?: string
 	party?: string
 }

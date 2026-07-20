@@ -22,16 +22,19 @@ const DematAccountPicker = ({ className }: { className?: string }) => {
     const { accounts } = useDematAccounts()
     const [selectedAccount, setSelectedAccount] = useAtom(selectedDematAccountAtom)
 
-    // Keep the persisted selection in sync with the server (deleted/renamed accounts).
+    // Auto-select a default account once the list loads, but only if nothing is selected yet
+    // or the previously selected account no longer exists (deleted/renamed). This must NOT
+    // depend on `selectedAccount`/`setSelectedAccount` - otherwise every user-driven selection
+    // change re-triggers this effect, which can race with a fresh accounts fetch and revert the
+    // selection right back to the previous account (the dropdown then appears to do nothing).
     useEffect(() => {
         if (accounts.length === 0) return
-        const current = accounts.find((account) => account.name === selectedAccount?.name)
-        if (!current) {
-            setSelectedAccount(accounts[0])
-        } else if (JSON.stringify(current) !== JSON.stringify(selectedAccount)) {
-            setSelectedAccount(current)
-        }
-    }, [accounts, selectedAccount, setSelectedAccount])
+        setSelectedAccount((current) => {
+            const stillExists = current && accounts.some((account) => account.name === current.name)
+            return stillExists ? current : accounts[0]
+        })
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [accounts])
 
     return (
         <Select
